@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChikenKEK — спаси брата, обгони фабрику</title>
+<meta name="description" content="ChikenKEK — 2D платформер-раннер про курочку КЕКа. Три мира, три босса, один украденный брат.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --yolk:#FFB627;
+    --yolk-dark:#E89A0C;
+    --night:#1A2E1C;
+    --night-deep:#112013;
+    --shell:#FFF4E0;
+    --rust:#C44536;
+    --grass:#4F7942;
+    --steel:#4A4A4A;
+    --steel-dark:#2B2B2B;
+    --line: rgba(255,244,224,0.14);
+    --shadow: 0 14px 32px rgba(0,0,0,0.35);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+
+  body{
+    margin:0;
+    background:var(--night);
+    color:var(--shell);
+    font-family:'Nunito', sans-serif;
+    overflow-x:hidden;
+  }
+
+  h1,h2,h3,.display{
+    font-family:'Baloo 2', sans-serif;
+    margin:0;
+    line-height:1.05;
+  }
+
+  a{ color:inherit; }
+
+  .wrap{
+    max-width:1120px;
+    margin:0 auto;
+    padding:0 24px;
+  }
+
+  /* ---------- background texture: soft scattered dots like grain on a dark field ---------- */
+  .grain-bg{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(255,182,39,0.05) 0, transparent 45%),
+      radial-gradient(circle at 85% 8%, rgba(196,69,54,0.06) 0, transparent 40%),
+      radial-gradient(circle at 70% 80%, rgba(79,121,66,0.10) 0, transparent 50%);
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky;
+    top:0;
+    z-index:50;
+    backdrop-filter: blur(10px);
+    background:rgba(26,46,28,0.82);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 24px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:0.3px;
+  }
+  .brand .crack-egg{
+    width:30px; height:30px;
+    flex-shrink:0;
+  }
+  .nav-links{
+    display:flex;
+    gap:28px;
+    font-weight:700;
+    font-size:15px;
+  }
+  .nav-links a{
+    text-decoration:none;
+    opacity:0.85;
+    transition:opacity .15s, color .15s;
+  }
+  .nav-links a:hover{ opacity:1; color:var(--yolk); }
+  .nav-cta{
+    background:var(--yolk);
+    color:var(--night-deep);
+    padding:9px 20px;
+    border-radius:999px;
+    font-weight:800;
+    font-size:14px;
+    text-decoration:none;
+    box-shadow:0 4px 0 var(--yolk-dark);
+    transition:transform .12s;
+  }
+  .nav-cta:hover{ transform:translateY(-1px); }
+  @media (max-width:720px){ .nav-links{ display:none; } }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;
+    z-index:1;
+    padding:84px 0 64px;
+    display:grid;
+    grid-template-columns:1.1fr 0.9fr;
+    gap:40px;
+    align-items:center;
+  }
+  @media (max-width:860px){ .hero{ grid-template-columns:1fr; padding-top:56px; } }
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:800;
+    font-size:13px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--yolk);
+    background:rgba(255,182,39,0.12);
+    border:1px solid rgba(255,182,39,0.35);
+    padding:6px 14px;
+    border-radius:999px;
+    margin-bottom:22px;
+  }
+  .eyebrow .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--yolk);
+    box-shadow:0 0 0 3px rgba(255,182,39,0.25);
+  }
+
+  .hero h1{
+    font-size:clamp(42px, 6vw, 68px);
+    font-weight:800;
+    color:var(--shell);
+  }
+  .hero h1 .hl{ color:var(--yolk); }
+  .hero p.lede{
+    font-size:19px;
+    line-height:1.55;
+    color:rgba(255,244,224,0.82);
+    max-width:520px;
+    margin:22px 0 34px;
+    font-weight:600;
+  }
+
+  .cta-row{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+
+  .btn-download{
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    background:var(--yolk);
+    color:var(--night-deep);
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:19px;
+    padding:16px 30px;
+    border-radius:14px;
+    text-decoration:none;
+    box-shadow:0 6px 0 var(--yolk-dark), var(--shadow);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .btn-download:hover{ transform:translateY(-2px); }
+  .btn-download:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--yolk-dark); }
+  .btn-download svg{ width:22px; height:22px; }
+
+  .meta-row{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    font-size:13px;
+    color:rgba(255,244,224,0.55);
+    font-weight:700;
+  }
+
+  /* ---------- hero visual: chicken silhouette + egg crack motif ---------- */
+  .hero-art{
+    position:relative;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+  .egg-stage{
+    width:100%;
+    max-width:380px;
+    aspect-ratio:1/1;
+    position:relative;
+  }
+  .egg-stage svg{ width:100%; height:100%; display:block; }
+
+  /* ---------- level ribbon (signature element) ---------- */
+  .ribbon-section{
+    position:relative;
+    z-index:1;
+    padding:40px 0 80px;
+  }
+  .ribbon-label{
+    text-align:center;
+    font-weight:800;
+    font-size:13px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:rgba(255,244,224,0.45);
+    margin-bottom:22px;
+  }
+  .ribbon-track{
+    display:flex;
+    align-items:center;
+    overflow-x:auto;
+    gap:0;
+    padding:18px 8px 28px;
+    scrollbar-width:thin;
+  }
+  .ribbon-track::-webkit-scrollbar{ height:6px; }
+  .ribbon-track::-webkit-scrollbar-thumb{ background:var(--line); border-radius:6px; }
+
+  .node{
+    flex-shrink:0;
+    width:46px; height:46px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    border:2px solid var(--line);
+    background:var(--night-deep);
+    color:rgba(255,244,224,0.5);
+    position:relative;
+  }
+  .node.world1{ border-color:rgba(79,121,66,0.6); }
+  .node.world2{ border-color:rgba(255,182,39,0.45); }
+  .node.world3{ border-color:rgba(196,69,54,0.55); }
+  .node.boss{
+    width:60px; height:60px;
+    background:var(--rust);
+    border-color:var(--rust);
+    color:var(--shell);
+    font-size:22px;
+  }
+  .connector{
+    width:26px; height:2px;
+    background:var(--line);
+    flex-shrink:0;
+  }
+  @media (max-width:720px){ .connector{ width:14px; } }
+
+  /* ---------- worlds ---------- */
+  .section-head{
+    text-align:center;
+    margin-bottom:48px;
+  }
+  .section-head .eyebrow{ margin-bottom:14px; }
+  .section-head h2{
+    font-size:clamp(30px, 4vw, 42px);
+    color:var(--shell);
+  }
+  .section-head p{
+    color:rgba(255,244,224,0.6);
+    font-size:16px;
+    font-weight:600;
+    max-width:480px;
+    margin:14px auto 0;
+  }
+
+  .worlds-section{ position:relative; z-index:1; padding:60px 0; }
+
+  .world-cards{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:22px;
+  }
+  @media (max-width:860px){ .world-cards{ grid-template-columns:1fr; } }
+
+  .world-card{
+    border-radius:20px;
+    padding:28px 26px 30px;
+    position:relative;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .world-card.w1{ background:linear-gradient(160deg, rgba(79,121,66,0.28), rgba(26,46,28,0.4)); }
+  .world-card.w2{ background:linear-gradient(160deg, rgba(255,182,39,0.16), rgba(26,46,28,0.4)); }
+  .world-card.w3{ background:linear-gradient(160deg, rgba(196,69,54,0.20), rgba(26,46,28,0.4)); }
+
+  .world-tag{
+    font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+    color:rgba(255,244,224,0.55);
+    margin-bottom:10px;
+  }
+  .world-card h3{ font-size:24px; color:var(--shell); margin-bottom:10px; }
+  .world-card p{ font-size:15px; line-height:1.5; color:rgba(255,244,224,0.72); font-weight:600; margin-bottom:18px; }
+
+  .boss-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(0,0,0,0.28);
+    border:1px solid var(--line);
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:800;
+  }
+  .boss-chip .skull{ font-size:14px; }
+
+  /* ---------- bosses ---------- */
+  .boss-section{ position:relative; z-index:1; padding:60px 0 80px; }
+  .boss-cards{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:22px;
+  }
+  @media (max-width:860px){ .boss-cards{ grid-template-columns:1fr; } }
+
+  .boss-card{
+    background:var(--night-deep);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:26px;
+    position:relative;
+  }
+  .boss-rank{
+    font-family:'Baloo 2', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    color:var(--rust);
+    letter-spacing:1px;
+    margin-bottom:8px;
+  }
+  .boss-card h3{ font-size:22px; margin-bottom:8px; color:var(--shell); }
+  .boss-card .hp-bar{
+    height:8px;
+    border-radius:999px;
+    background:rgba(255,244,224,0.1);
+    overflow:hidden;
+    margin:14px 0 12px;
+  }
+  .boss-card .hp-fill{ height:100%; background:var(--rust); border-radius:999px; }
+  .boss-card p{ font-size:14px; color:rgba(255,244,224,0.65); line-height:1.5; font-weight:600; }
+
+  /* ---------- final CTA ---------- */
+  .final-cta{
+    position:relative;
+    z-index:1;
+    margin:0 auto 80px;
+    max-width:1120px;
+    padding:0 24px;
+  }
+  .final-cta-inner{
+    background:linear-gradient(135deg, rgba(255,182,39,0.14), rgba(196,69,54,0.10));
+    border:1px solid rgba(255,182,39,0.3);
+    border-radius:26px;
+    padding:56px 40px;
+    text-align:center;
+  }
+  .final-cta-inner h2{
+    font-size:clamp(28px, 4vw, 40px);
+    color:var(--shell);
+    margin-bottom:14px;
+  }
+  .final-cta-inner p{
+    color:rgba(255,244,224,0.7);
+    font-size:16px;
+    font-weight:600;
+    margin-bottom:30px;
+  }
+  .sys-req{
+    margin-top:26px;
+    font-size:13px;
+    color:rgba(255,244,224,0.45);
+    font-weight:700;
+  }
+
+  /* ---------- footer ---------- */
+  footer{
+    position:relative;
+    z-index:1;
+    border-top:1px solid var(--line);
+    padding:32px 0;
+  }
+  .footer-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:14px;
+    font-size:13px;
+    color:rgba(255,244,224,0.45);
+    font-weight:700;
+  }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain-bg"></div>
+
+<header>
+  <div class="nav wrap">
+    <div class="brand">
+      <svg class="crack-egg" viewBox="0 0 32 32" fill="none">
+        <path d="M16 3C11 3 6 12 6 19c0 6 4 10 10 10s10-4 10-10C26 12 21 3 16 3Z" fill="#FFF4E0"/>
+        <path d="M13 11l3 4-2 3 3 3" stroke="#1A2E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      ChikenKEK
+    </div>
+    <nav class="nav-links">
+      <a href="#worlds">Миры</a>
+      <a href="#bosses">Боссы</a>
+      <a href="#download">Скачать</a>
+    </nav>
+    <a class="nav-cta" href="#download">Скачать игру</a>
+  </div>
+</header>
+
+<section class="hero wrap">
+  <div>
+    <span class="eyebrow"><span class="dot"></span>2D платформер-раннер · Windows</span>
+    <h1>Брата украли.<br>Дороги <span class="hl">назад</span> нет.</h1>
+    <p class="lede">
+      КЕК бежит через поляну, лес и фабрику, чтобы догнать Императора КОКа
+      и вернуть похищенного брата. Прыгай, уворачивайся, бей боссов по голове —
+      разворачиваться не вариант, бежать можно только вперёд.
+    </p>
+    <div class="cta-row">
+      <a class="btn-download" href="https://github.com/ВАШ-АККАУНТ/ВАШ-РЕПОЗИТОРИЙ/releases/latest/download/ChikenKEK_Setup.exe" id="dl-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="m6 11 6 6 6-6"/><path d="M5 21h14"/></svg>
+        Скачать для Windows
+      </a>
+      <div class="meta-row">
+        <span>ChikenKEK_Setup.exe</span>
+        <span>Версия 1.0 · ~93 МБ</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-art">
+    <div class="egg-stage">
+      <svg viewBox="0 0 380 380" fill="none">
+        <ellipse cx="190" cy="330" rx="140" ry="18" fill="#11201F" opacity="0.5"/>
+        <g>
+          <path d="M190 50C120 50 70 180 70 250c0 70 54 110 120 110s120-40 120-110C310 180 260 50 190 50Z" fill="#FFB627"/>
+          <path d="M190 50C120 50 70 180 70 250c0 70 54 110 120 110s120-40 120-110C310 180 260 50 190 50Z" fill="url(#g1)" opacity="0.5"/>
+        </g>
+        <path d="M150 130c8 22-10 30-2 50s28 14 22 38" stroke="#1A2E1C" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.55"/>
+        <circle cx="150" cy="215" r="9" fill="#1A2E1C"/>
+        <circle cx="230" cy="215" r="9" fill="#1A2E1C"/>
+        <path d="M168 252c8 10 36 10 44 0" stroke="#1A2E1C" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <path d="M150 165c-10-14-34-14-34 6 0 16 20 18 34 6" fill="#C44536"/>
+        <defs>
+          <linearGradient id="g1" x1="70" y1="50" x2="310" y2="360" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#FFD27A"/>
+            <stop offset="1" stop-color="#E89A0C"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section class="ribbon-section wrap">
+  <div class="ribbon-label">Путь КЕКа — 30 уровней, 3 мира, 3 решающих боя</div>
+  <div class="ribbon-track" id="ribbon"></div>
+</section>
+
+<section class="worlds-section wrap" id="worlds">
+  <div class="section-head">
+    <span class="eyebrow"><span class="dot"></span>Три мира</span>
+    <h2>Каждый мир бежит иначе</h2>
+    <p>Скорость растёт, препятствия хитрее, а земля под лапами — то трава, то бетон цеха.</p>
+  </div>
+
+  <div class="world-cards">
+    <div class="world-card w1">
+      <div class="world-tag">Уровни 1–10</div>
+      <h3>Поляна курочек</h3>
+      <p>Первые шипы, первые батуты, первые монеты. Здесь КЕК ещё не знает, во что ввязался.</p>
+      <span class="boss-chip"><span class="skull">💀</span> Куробот · 5 HP</span>
+    </div>
+    <div class="world-card w2">
+      <div class="world-tag">Уровни 11–20</div>
+      <h3>Дремучий лес</h3>
+      <p>Тропа сужается, миниботы бегут навстречу, а ловушки требуют точного прыжка, не угадывания.</p>
+      <span class="boss-chip"><span class="skull">💀</span> МегаЯйцо · 7 HP</span>
+    </div>
+    <div class="world-card w3">
+      <div class="world-tag">Уровни 21–30</div>
+      <h3>Фабрика КОКа</h3>
+      <p>Шипы на платформах, узкие коридоры из металла — и в конце цеха ждёт сам Император.</p>
+      <span class="boss-chip"><span class="skull">💀</span> Император КОК · 4 фазы</span>
+    </div>
+  </div>
+</section>
+
+<section class="boss-section wrap" id="bosses">
+  <div class="section-head">
+    <span class="eyebrow"><span class="dot"></span>Боссфайты</span>
+    <h2>Три боя, которые ломают ритм раннера</h2>
+    <p>На боссфайтах бег прекращается — КЕК встаёт на месте и должен думать, а не только жать «прыжок».</p>
+  </div>
+
+  <div class="boss-cards">
+    <div class="boss-card">
+      <div class="boss-rank">УРОВЕНЬ 10</div>
+      <h3>Куробот</h3>
+      <div class="hp-bar"><div class="hp-fill" style="width:50%"></div></div>
+      <p>Прыгает на КЕКа и стреляет волнами миниботов. Устаёт после прыжка — это и есть твоё окно для удара сверху.</p>
+    </div>
+    <div class="boss-card">
+      <div class="boss-rank">УРОВЕНЬ 20</div>
+      <h3>МегаЯйцо</h3>
+      <div class="hp-bar"><div class="hp-fill" style="width:70%"></div></div>
+      <p>Поднимает пушку и метит землю крестами — там упадут яйца. Запоминай метки, а не реагируй на сами яйца.</p>
+    </div>
+    <div class="boss-card">
+      <div class="boss-rank">УРОВЕНЬ 30</div>
+      <h3>Император КОК</h3>
+      <div class="hp-bar"><div class="hp-fill" style="width:100%"></div></div>
+      <p>Лазер, ракеты, рывки и финальная форма с огнемётом. 4 фазы боя — и брат КЕКа уже совсем рядом.</p>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta wrap" id="download">
+  <div class="final-cta-inner">
+    <h2>Поляна ждала достаточно долго</h2>
+    <p>Установи ChikenKEK и узнай, доберётся ли КЕК до фабрики раньше, чем КОК доберётся до его терпения.</p>
+    <a class="btn-download" href="https://github.com/ВАШ-АККАУНТ/ВАШ-РЕПОЗИТОРИЙ/releases/latest/download/ChikenKEK_Setup.exe">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="m6 11 6 6 6-6"/><path d="M5 21h14"/></svg>
+      Скачать ChikenKEK_Setup.exe
+    </a>
+    <div class="sys-req">Windows 10/11 · 64-bit · ~93 МБ на диске · Не требует установки Python</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <span>ChikenKEK © KEKProduction</span>
+    <span>Сделано на Python + Pygame</span>
+  </div>
+</footer>
+
+<script>
+  // Сборка "ленты уровней" — фирменный элемент страницы:
+  // визуальная карта прогресса через 3 мира и 3 боссов одним взглядом.
+  (function(){
+    const ribbon = document.getElementById('ribbon');
+    const worlds = [
+      { cls: 'world1', count: 9 },
+      { cls: 'world2', count: 9 },
+      { cls: 'world3', count: 9 },
+    ];
+    let levelNum = 1;
+    let html = '';
+    worlds.forEach((w, wi) => {
+      for (let i = 0; i < w.count; i++){
+        html += `<div class="node ${w.cls}">${levelNum}</div>`;
+        html += `<div class="connector"></div>`;
+        levelNum++;
+      }
+      html += `<div class="node boss" title="Боссфайт">💀</div>`;
+      if (wi < worlds.length - 1){
+        html += `<div class="connector"></div>`;
+        levelNum++; // boss level number skip already counted as level 10/20
+      }
+    });
+    ribbon.innerHTML = html;
+  })();
+</script>
+
+</body>
+</html>
